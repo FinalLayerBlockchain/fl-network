@@ -1,0 +1,18 @@
+[Unit]
+Description=Final Layer post-quantum validator %i (ML-DSA-87, BSC/Parlia based)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/opt/fl-bsc/val%i.env
+Environment=FL_PQ_VALIDATOR_KEY=/opt/fl-bsc/keys/val%i-consensus.json
+ExecStart=/bin/bash -c 'exec /opt/fl-bsc/bin/geth --datadir /opt/fl-bsc/val%i --networkid 20261012 --port $P2P_PORT --nat extip:207.148.16.239 --http --http.addr $HTTP_ADDR --http.port $HTTP_PORT --http.vhosts=* --http.corsdomain=* --http.api $HTTP_API --ws=false --mine --miner.etherbase $ETHERBASE --syncmode full $STORE_FLAGS --state.scheme hash --cache 384 --maxpeers 50 $EXTRA_FLAGS --verbosity 3'
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+KillSignal=SIGINT
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+[Unit]
+Description=Final Layer block explorer (indexer + API + web, post-quantum chain)
+After=fl-bsc-val@1.service
+Wants=fl-bsc-val@1.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/fl-explorer
+Environment=FL_RPC=http://127.0.0.1:8545 FL_EXPLORER_PORT=8099
+ExecStart=/usr/bin/python3 /opt/fl-explorer/server.py
+Restart=always
+RestartSec=5
+MemoryMax=300M
+
+[Install]
+WantedBy=multi-user.target
