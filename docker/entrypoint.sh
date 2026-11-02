@@ -9,4 +9,4 @@ if [ ! -d /data/geth/chaindata ]; then
 fi
 exec geth --datadir /data --networkid 20261012 --port 30311 --bootnodes "$BOOTNODE" \
   --http --http.addr 0.0.0.0 --http.port 8545 --http.vhosts '*' --http.api eth,net,web3,txpool \
-  --syncmode full --state.scheme hash "$@"
+  --syncmode full --state.scheme hash --miner.gasprice 20000000000 "$@"

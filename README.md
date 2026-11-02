@@ -14,6 +14,9 @@ here is for the current bsc-geth based chain.
 | --- | --- |
 | Chain ID | `20261012` |
 | Genesis | [`genesis.json`](genesis.json) (identical to `docker/genesis.json`) |
+| Genesis hash | `0x7112dbb0c7524c3c0b15a04be6d69ea1c8976309bcaa02f9b132ff385fbe69d2` (network reset 2026-10-27) |
+| Minimum gas price | 20 gwei (`--miner.gasprice 20000000000` on validators and in the Docker image) |
+| Fee currencies | Directory `0x...5052`, fixed-rate oracle `0x...5053`, test token FLTD `0x...5054` (gas payable in FLTD at 1 FL = 0.01 FLTD) |
 | Public RPC | `http://207.148.16.239:8545` |
 | P2P port | `30311` |
 | Block time | 3 s |
@@ -33,6 +36,8 @@ here is for the current bsc-geth based chain.
 | `scripts/build.sh` | Builds the node |
 | `scripts/devnet.sh` | Local multi-validator devnet: `start`, `stop`, `status` |
 | `scripts/e2e.sh` | End-to-end checks against a running node |
+| `scripts/fee_currency_e2e.sh` | Fee currency end-to-end checks (gas paid in FLTD) |
+| `scripts/fee_governance_devnet.sh` | Validator suspend / delayed-list checks for fee currencies on a 3-validator devnet |
 | `scripts/keys.sh` | Devnet key generation with `flpq` |
 | `scripts/forge*.sh`, `foundry.sh` | Contract test helpers |
 | `scripts/producers.sh`, `sigs.sh`, `inflation_probe.sh`, `wait_inflation.sh` | Operational probes: recent block producers, StakeHub state, daily inflation payout |

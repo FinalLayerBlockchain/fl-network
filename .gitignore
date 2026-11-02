@@ -4,3 +4,4 @@ docker/flpq
 .env
 *key*.json
 keys/
+__pycache__/

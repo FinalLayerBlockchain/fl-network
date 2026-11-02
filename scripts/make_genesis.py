@@ -117,8 +117,8 @@ edit("TokenRecoverPortal.sol", protector)
 subprocess.check_call(["forge", "build", "--skip", "test", "--skip", "script"], cwd=repo)
 
 
-def runtime(contract):
-    with open(os.path.join(repo, "out", contract + ".sol", contract + ".json")) as f:
+def runtime(contract, source=None):
+    with open(os.path.join(repo, "out", (source or contract) + ".sol", contract + ".json")) as f:
         code = json.load(f)["deployedBytecode"]["object"]
     return code if code.startswith("0x") else "0x" + code
 
@@ -172,6 +172,54 @@ alloc[treasury.lower().replace("0x", "")] = {"balance": hex(TOTAL_SUPPLY_WEI)}
 # opcode keep it from ever being treated as an empty account.
 alloc["0000000000000000000000000000000000005051"] = {"balance": "0x0", "nonce": "0x1", "code": "0xfe"}
 
+# ---------------------------------------------------------------- fee currencies
+# Gas paid in an ERC-20 (Celo-style fee abstraction). The directory and the
+# governance-set price source are owned by the BSCTimelock (on-chain votes
+# only); the FLTD test token starts listed so the feature can be tried
+# without waiting for a vote. Slot layout is pinned by
+# test/FinalLayerFeeCurrency.t.sol (testGenesisLayout).
+FEE_DIRECTORY = "0x0000000000000000000000000000000000005052"
+FEE_ORACLE = "0x0000000000000000000000000000000000005053"
+FEE_TEST_TOKEN = "0x0000000000000000000000000000000000005054"
+FLTD_SUPPLY = 1_000_000_000 * 10**18
+FLTD_RATE = (1, 100)  # token units per FL wei: 1 FL = 0.01 FLTD
+FLTD_INTRINSIC_GAS = 50_000  # worst-case FLTD credit (fresh producer slot) measured at 30-35k gas (2026-10-27)
+
+
+def word(n):
+    return "0x%064x" % n
+
+
+def keccak(hexdata):
+    return subprocess.check_output(["cast", "keccak", hexdata]).decode().strip()
+
+
+def map_slot(key_addr, slot):
+    return keccak("0x" + key_addr.lower().replace("0x", "").rjust(64, "0") + "%064x" % slot)
+
+
+def plus(slot_hex, n):
+    return word(int(slot_hex, 16) + n)
+
+
+cfg = map_slot(FEE_TEST_TOKEN, 0)
+rate = map_slot(FEE_TEST_TOKEN, 0)
+genesis_time = int(g["timestamp"], 16)
+alloc[FEE_DIRECTORY[2:].lower()] = {"balance": "0x0", "nonce": "0x1", "code": runtime("FeeCurrencyDirectory"), "storage": {
+    cfg: word(int(FEE_ORACLE, 16)),
+    plus(cfg, 1): word(FLTD_INTRINSIC_GAS),
+    word(1): word(1),
+    keccak(word(1)): word(int(FEE_TEST_TOKEN, 16)),
+}}
+alloc[FEE_ORACLE[2:].lower()] = {"balance": "0x0", "nonce": "0x1", "code": runtime("FixedRateOracle"), "storage": {
+    rate: word((FLTD_RATE[1] << 128) | FLTD_RATE[0]),
+    plus(rate, 1): word(genesis_time),  # updatedAt = genesis, maxAge 0 (no expiry)
+}}
+alloc[FEE_TEST_TOKEN[2:].lower()] = {"balance": "0x0", "nonce": "0x1", "code": runtime("FLTestDollar", "FeeCurrencyERC20"), "storage": {
+    map_slot(treasury, 0): word(FLTD_SUPPLY),
+    word(2): word(FLTD_SUPPLY),
+}}
+
 total = sum(int(acc.get("balance", "0x0"), 16) for acc in alloc.values())
 assert total == TOTAL_SUPPLY_WEI, total
 
@@ -180,3 +228,4 @@ with open(out_path, "w") as f:
 print("genesis written:", out_path)
 print("chainId", CHAIN_ID, "treasury", treasury, "supply 5,000,000,000 FL")
 print("validators", consensus)
+print("fee currencies: directory", FEE_DIRECTORY, "oracle", FEE_ORACLE, "FLTD", FEE_TEST_TOKEN, "rate", FLTD_RATE)
